@@ -6,55 +6,97 @@ import { generateSlug } from '../utils/slugify'; // স্লাগ তৈরি
 
 const URL = "https://jobsboxbd.com"; // আপনার ওয়েবসাইটের মূল URL
 
+// একটি Date অবজেক্ট ভ্যালিড কিনা তা চেক করার জন্য Helper ফাংশন
+function isValidDate(d) {
+  // এটি চেক করে যে ইনপুট একটি Date অবজেক্ট কিনা এবং এর মান NaN (Not-a-Number) নয়
+  return d instanceof Date && !isNaN(d);
+}
+
 function generateSiteMap(jobs, categories) {
   let xml = `<?xml version="1.0" encoding="UTF-8"?>`;
   xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
 
-  // 1. Static Pages (Home, About)
+  // আজকের তারিখ (ISO ফরম্যাটে YYYY-MM-DD) একবার তৈরি করে রাখা হচ্ছে
+  const today = new Date().toISOString().split('T')[0];
+
+  // ১. স্ট্যাটিক পেজ (হোম, অ্যাবাউট)
   xml += `
     <url>
       <loc>${URL}</loc>
-      <lastmod>${new Date().toISOString().split('T')[0]}</lastmod> {/* আজকের তারিখ */}
+      <lastmod>${today}</lastmod>
       <changefreq>daily</changefreq>
       <priority>1.0</priority>
     </url>
   `;
   xml += `
     <url>
-      <loc>${URL}/about</loc>
-      <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+      <loc>${URL}/about</loc> {/* নিশ্চিত করুন /about পেজটি আছে */}
+      <lastmod>${today}</lastmod> {/* আপনি চাইলে নির্দিষ্ট তারিখ দিতে পারেন */}
       <changefreq>monthly</changefreq>
       <priority>0.8</priority>
     </url>
   `;
 
-  // 2. Category Pages
+  // ২. ক্যাটাগরি পেজ
   categories.forEach(category => {
-    xml += `
-      <url>
-        <loc>${URL}/category/${category.slug}</loc>
-        <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-        <changefreq>daily</changefreq> {/* ক্যাটাগরিতে প্রায়ই নতুন জব আসতে পারে */}
-        <priority>0.9</priority>
-      </url>
-    `;
+    // ক্যাটাগরি এবং স্লাগ ভ্যালিড কিনা চেক করা হচ্ছে
+    if (category && category.slug) {
+        xml += `
+        <url>
+            <loc>${URL}/category/${category.slug}</loc>
+            <lastmod>${today}</lastmod>
+            <changefreq>daily</changefreq>
+            <priority>0.9</priority>
+        </url>
+        `;
+    } else {
+        // যদি কোনো ক্যাটাগরির স্লাগ না থাকে, তাহলে কনসোলে ওয়ার্নিং দেখানো যেতে পারে
+        console.warn("Sitemap: Skipping category due to missing slug:", category);
+    }
   });
 
-  // 3. Individual Job Pages
+  // ৩. প্রতিটি জব পেজ
   jobs.forEach(job => {
-    // নিশ্চিত করুন যে job.job_title আছে এবং generateSlug কাজ করছে
+    // জব এবং জব টাইটেল আছে কিনা নিশ্চিত করা
     if (job && job.job_title) {
-      const jobSlug = generateSlug(String(job.job_title));
-      // শেষ আপডেটের তারিখ থাকলে ব্যবহার করা ভালো, না হলে আজকের তারিখ
-      const lastMod = job.publishDate ? new Date(job.publishDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      const jobTitleStr = String(job.job_title).trim(); // টাইটেল স্ট্রিং এবং ট্রিম করা
+      // টাইটেল খালি কিনা চেক করা
+      if(jobTitleStr === '') {
+          console.warn("Sitemap: Skipping job with empty title:", job.id);
+          return; // এই জবটি বাদ দিয়ে পরেরটিতে যাও
+      }
+
+      const jobSlug = generateSlug(jobTitleStr); // স্লাগ তৈরি করা
+      // স্লাগ তৈরি সফল হয়েছে কিনা বা ডিফল্ট 'job' স্লাগ আসেনি তো?
+      if (!jobSlug || jobSlug === 'job') {
+          console.warn('Sitemap: Skipping job with problematic slug generation:', job.id, job.job_title);
+          return; // এই জবটি বাদ দিয়ে পরেরটিতে যাও
+      }
+
+      let lastMod = today; // ডিফল্ট লাস্ট মডিফিকেশন তারিখ = আজকের তারিখ
+      if (job.publishDate) {
+        const pubDate = new Date(job.publishDate); // publishDate থেকে Date অবজেক্ট তৈরি
+        // **পরিবর্তন:** তৈরি হওয়া Date অবজেক্টটি ভ্যালিড কিনা চেক করা হচ্ছে
+        if (isValidDate(pubDate)) {
+          lastMod = pubDate.toISOString().split('T')[0]; // ভ্যালিড হলে ISO স্ট্রিং ব্যবহার করা হচ্ছে
+        } else {
+          // যদি ভ্যালিড না হয়, কনসোলে ওয়ার্নিং দেখানো হচ্ছে এবং আজকের তারিখ ব্যবহার করা হচ্ছে
+          console.warn(`Sitemap: Invalid publishDate ('${job.publishDate}') for job ID ${job.id}. Using today's date.`);
+        }
+      }
+
+      // URL তৈরি করা হচ্ছে
       xml += `
         <url>
           <loc>${URL}/job/${jobSlug}</loc>
           <lastmod>${lastMod}</lastmod>
-          <changefreq>weekly</changefreq> {/* জব পেজ সাধারণত পরিবর্তন হয় না */}
+          <changefreq>weekly</changefreq>
           <priority>0.7</priority>
         </url>
       `;
+    } else {
+        // যদি জব টাইটেল না থাকে, তাহলে কনসোলে ওয়ার্নিং
+        console.warn('Sitemap: Skipping job with missing title:', job.id);
     }
   });
 
@@ -62,38 +104,47 @@ function generateSiteMap(jobs, categories) {
   return xml;
 }
 
-// এই কম্পোনেন্টটি আসলে কিছু রেন্ডার করবে না
+// এই পেজ কম্পোনেন্টটি খালি থাকবে কারণ রেসপন্স getServerSideProps থেকে পাঠানো হবে
 function SiteMapPage() {
-  // getServerSideProps হ্যান্ডেল করবে রেসপন্স
+  // Nothing to render here...
 }
 
 export async function getServerSideProps({ res }) {
+  console.log("[sitemap.xml] Starting generation...");
   let jobs = [];
   let categories = [];
 
   try {
-    // সব ক্যাটাগরি লোড করুন
+    console.log("[sitemap.xml] Fetching categories...");
     categories = getAllCategoriesForDisplay();
+    console.log(`[sitemap.xml] Fetched ${categories.length} categories.`);
 
-    // সব জব পোস্ট লোড করুন (আপনার API থেকে)
+    console.log("[sitemap.xml] Fetching jobs from API...");
     const response = await axios.get('https://adminjobs.kaziitstudio.com/job_post_api.php');
     jobs = response.data && Array.isArray(response.data.jobs) ? response.data.jobs : [];
+    console.log(`[sitemap.xml] Fetched ${jobs.length} jobs.`);
+
+    console.log("[sitemap.xml] Generating XML...");
+    const sitemap = generateSiteMap(jobs, categories);
+    console.log("[sitemap.xml] XML generation complete.");
+
+    // Vercel এ ক্যাশিং এর জন্য হেডার যোগ করা (যেমন, ১ দিনের জন্য ক্যাশ)
+    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate'); // 86400 seconds = 1 day
+    // কনটেন্ট টাইপ XML সেট করা হচ্ছে
+    res.setHeader('Content-Type', 'application/xml');
+    // XML রেসপন্স পাঠানো হচ্ছে
+    res.write(sitemap);
+    res.end();
+    console.log("[sitemap.xml] Sitemap response sent.");
 
   } catch (error) {
-    console.error("Error fetching data for sitemap:", error.message);
-    // এরর হলেও খালি সাইটম্যাপ জেনারেট করার চেষ্টা করা যেতে পারে শুধু স্ট্যাটিক পেজ দিয়ে
-    // অথবা একটি এরর স্ট্যাটাস রিটার্ন করা যেতে পারে
+    console.error("[sitemap.xml] Error in getServerSideProps:", error);
+    res.statusCode = 500;
+    res.write("Internal Server Error generating sitemap."); // একটি সাধারণ এরর মেসেজ পাঠানো হচ্ছে
+    res.end();
   }
 
-  // সাইটম্যাপ XML তৈরি করুন
-  const sitemap = generateSiteMap(jobs, categories);
-
-  res.setHeader('Content-Type', 'application/xml');
-  // XML রেসপন্স হিসেবে পাঠানো হচ্ছে
-  res.write(sitemap);
-  res.end();
-
-  // যেহেতু রেসপন্স সরাসরি হ্যান্ডেল করা হয়েছে, খালি props রিটার্ন করুন
+  // props রিটার্ন করা আবশ্যক, যদিও আমরা রেসপন্স আগেই পাঠিয়ে দিয়েছি
   return {
     props: {},
   };
