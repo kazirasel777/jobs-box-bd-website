@@ -5,16 +5,17 @@ import axios from 'axios';
 import Link from 'next/link';
 import Header from '../../components/Header'; // সঠিক পাথ নিশ্চিত করুন
 import { generateSlug } from '../../utils/slugify'; // সঠিক পাথ
+// getCategoryName (আইডি থেকে নাম পাওয়ার জন্য) এবং getAllCategoriesForDisplay (হেডারের জন্য সব ক্যাটাগরি পেতে) ইম্পোর্ট করা হচ্ছে
 import { getCategoryName, getAllCategoriesForDisplay } from '../../utils/categories'; // সঠিক পাথ
-// descriptionGenerator.js থেকে ফাংশনগুলো ইম্পোর্ট করা হচ্ছে
-import { generateAutoDescription, truncateDetails } from '../../utils/descriptionGenerator'; // সঠিক পাথ দিন
 import { FaExternalLinkAlt, FaRegClock, FaRegCalendarAlt, FaRegNewspaper, FaUsers, FaThList } from 'react-icons/fa';
-import { useRouter } from 'next/router'; // যদি fallback ব্যবহার করা হয়
+import { useRouter } from 'next/router'; // যদি fallback ব্যবহার করা হয়
 
 const JobDetailsPage = ({ job, allCategories, error }) => {
     const router = useRouter();
+    // allCategories এখন getAllCategoriesForDisplay থেকে আসা id, name, slug সহ অবজেক্ট এর অ্যারে
     const safeAllCategories = Array.isArray(allCategories) ? allCategories : [];
 
+    // যদি getStaticPaths এ fallback: true ব্যবহার করা হয়, তাহলে লোডিং স্টেট দেখানো যেতে পারে
     if (router.isFallback) {
         return (
             <div className="bg-gray-50 min-h-screen flex flex-col justify-center items-center">
@@ -24,15 +25,13 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
     }
 
     if (error || !job) {
-        const pageTitle = error ? "ত্রুটি - Job Box BD" : "চাকরি পাওয়া যায়নি - Job Box BD";
-        const message = error || "আপনি যে চাকরিটি খুঁজছেন তা পাওয়া যায়নি অথবা লিংকটি সঠিক নয়।";
+        const pageTitle = error ? "ত্রুটি - Job Box BD" : "চাকরি পাওয়া যায়নি - Job Box BD";
+        const message = error || "আপনি যে চাকরিটি খুঁজছেন তা পাওয়া যায়নি অথবা লিংকটি সঠিক নয়।";
 
         return (
              <div className="bg-gray-50 min-h-screen flex flex-col">
-                <Head>
-                    <title>{pageTitle}</title>
-                    <meta name="description" content="Job Box BD - সর্বশেষ চাকরির খবর খুঁজুন।" />
-                </Head>
+                <Head><title>{pageTitle}</title></Head>
+                {/* Header এ currentSelectedCategory হিসেবে null পাঠানো হচ্ছে, কারণ এটি কোনো নির্দিষ্ট ক্যাটাগরি পেজ নয় */}
                 <Header allCategories={safeAllCategories} currentSelectedCategory={null} onSelectAllJobs={null} />
                 <main className="container mx-auto max-w-7xl py-20 text-center px-4 flex-grow flex flex-col justify-center">
                     <div>
@@ -63,92 +62,27 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
         ? job.details.split('\n').map((line, index) => line.trim() ? <p key={index} className="mb-2 last:mb-0">{line}</p> : null).filter(Boolean)
         : null;
 
+    // job.category_id এখন একটি নাম্বার অ্যারে হবে (getServerSideProps থেকে)
     const jobCategoryNames = (job.category_id || [])
-                             .map(id => getCategoryName(id))
-                             .filter(name => name && !name.startsWith('ক্যাটাগরি '));
+                             .map(id => getCategoryName(id)) // আইডি থেকে সরাসরি নাম
+                             .filter(name => name && !name.startsWith('ক্যাটাগরি ')); // "ক্যাটাগরি X" বাদ দেওয়া
 
+
+    // হেডার এ দেখানোর জন্য বর্তমান চাকরির প্রথম ক্যাটাগরি আইডি (যদি থাকে)
     const currentJobPrimaryCategoryId = (job.category_id && job.category_id.length > 0) ? job.category_id[0] : null;
-
-    // মেটা ডেসক্রিপশন তৈরি
-    // অপশন ১: যদি job.details থাকে এবং যথেষ্ট লম্বা হয়, তবে সেটি ব্যবহার করুন, অন্যথায় অটো-জেনারেট করুন
-    const metaDescription = (job.details && job.details.length > 20) ? truncateDetails(job.details, 160) : generateAutoDescription(job, 160);
-    
-    // অপশন ২: সবসময় অটো-জেনারেটেড ডেসক্রিপশন ব্যবহার করতে চাইলে নিচের লাইনটি আনকমেন্ট করুন এবং উপরেরটি কমেন্ট করুন
-    // const metaDescription = generateAutoDescription(job, 160);
 
     return (
         <div className="bg-gray-50 min-h-screen flex flex-col">
             <Head>
-                <title>{`${job.job_title || 'চাকরির বিস্তারিত'} | Job Box BD`}</title>
-                <meta name="description" content={metaDescription} />
+                <title>{`${job.job_title} | Job Box BD`}</title>
+                <meta name="description" content={truncateDetails(job.details, 160) || `${job.job_title} সার্কুলার (${job.publishDate || ''})। উৎস: ${job.jobSource || ''}। বিস্তারিত দেখুন Job Box BD তে।`} />
                 <link rel="icon" href="/favicon.ico" />
-
-                {/* Open Graph ট্যাগ */}
-                <meta property="og:title" content={`${job.job_title || 'চাকরির বিস্তারিত'} | Job Box BD`} />
-                <meta property="og:description" content={metaDescription} />
-                <meta property="og:type" content="article" />
-                {/* নিশ্চিত করুন আপনার সাইটের URL সঠিকভাবে দেওয়া হয়েছে */}
-                <meta property="og:url" content={`https://jobsboxbd.com/job/${generateSlug(job.job_title || 'untitled-job')}`} />
-                {/* যদি চাকরির সাথে ছবি থাকে, সেটি OG image হিসেবে ব্যবহার করুন */}
-                {job.headlineImage && <meta property="og:image" content={job.headlineImage} />}
-                {/* অথবা একটি ডিফল্ট OG ইমেজ দিন যদি চাকরির ছবি না থাকে */}
-                {/* {!job.headlineImage && <meta property="og:image" content="https://jobsboxbd.com/images/default-og-image.png" />} */}
-                <meta property="og:site_name" content="Job Box BD" />
-
-                 {/* Twitter Card ট্যাগ (অপশনাল কিন্তু ভালো) */}
-                <meta name="twitter:card" content="summary_large_image" />
-                <meta name="twitter:title" content={`${job.job_title || 'চাকরির বিস্তারিত'} | Job Box BD`} />
-                <meta name="twitter:description" content={metaDescription} />
-                {job.headlineImage && <meta name="twitter:image" content={job.headlineImage} />}
-                {/* <meta name="twitter:site" content="@YourTwitterHandle" /> */}
-
-                {/* JobPosting Schema Markup (JSON-LD) */}
-                <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-                    "@context": "https://schema.org/",
-                    "@type": "JobPosting",
-                    "title": job.job_title,
-                    "description": job.details || metaDescription,
-                    "datePosted": job.publishDate ? new Date(job.publishDate).toISOString() : new Date().toISOString(),
-                    "validThrough": job.lastDate ? new Date(job.lastDate).toISOString() : undefined,
-                    "employmentType": "FULL_TIME", // এটি আপনার জব ডেটা থেকে পরিবর্তনশীল হতে পারে
-                    "hiringOrganization": {
-                        "@type": "Organization",
-                        "name": job.jobSource || "A Reputed Company", // উৎস বা কোম্পানির নাম
-                        "sameAs": "https://jobsboxbd.com" // আপনার ওয়েবসাইটের URL
-                    },
-                    "jobLocation": {
-                        "@type": "Place",
-                        "address": {
-                            "@type": "PostalAddress",
-                            "addressLocality": "বিভিন্ন জেলা", // এটি পরিবর্তনশীল হতে পারে
-                            "addressCountry": "BD"
-                        }
-                    },
-                    "baseSalary": { // যদি বেতন সম্পর্কিত তথ্য থাকে
-                        "@type": "MonetaryAmount",
-                        "currency": "BDT",
-                        "value": {
-                          "@type": "QuantitativeValue",
-                          "value": job.salary || "আলোচনা সাপেক্ষ", // উদাহরণ
-                          "unitText": "MONTH" // অথবা "YEAR"
-                        }
-                    },
-                    // "jobBenefits": job.benefits, // যদি থাকে
-                    // "experienceRequirements": job.experience, // যদি থাকে
-                    // "educationRequirements": job.education, // যদি থাকে
-                    "identifier": {
-                        "@type": "PropertyValue",
-                        "name": job.job_title,
-                        "value": job.id ? String(job.id) : generateSlug(job.job_title || 'untitled-job')
-                      }
-                  }) }} />
-
             </Head>
 
             <Header
                 allCategories={safeAllCategories}
-                currentSelectedCategory={currentJobPrimaryCategoryId}
-                onSelectAllJobs={null}
+                currentSelectedCategory={currentJobPrimaryCategoryId} // চাকরির প্রথম ক্যাটাগরি আইডি পাঠানো হচ্ছে
+                onSelectAllJobs={null} // জব ডিটেইলস পেজে onSelectAllJobs এর বিশেষ কোনো কাজ নেই, তাই null
             />
 
             <main className="container mx-auto max-w-7xl py-8 px-4 flex-grow">
@@ -191,7 +125,7 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
 
                         {(job.circularImage1 || job.circularImage2 || job.circularImage3 || job.circularImage4) && (
                              <div className="mb-8">
-                                <h2 className="text-xl font-semibold mb-4 text-gray-700 border-t pt-6">অফিসিয়াল বিজ্ঞপ্তি / ছবি</h2>
+                                <h2 className="text-xl font-semibold mb-4 text-gray-700 border-t pt-6">অফিসিয়াল বিজ্ঞপ্তি / ছবি</h2>
                                 <div className="space-y-4">
                                     {job.circularImage1 && <img loading="lazy" src={job.circularImage1} alt={`${job.job_title} - সার্কুলার ১`} className="rounded border border-gray-200 w-full shadow-sm block"/>}
                                     {job.circularImage2 && <img loading="lazy" src={job.circularImage2} alt={`${job.job_title} - সার্কুলার ২`} className="rounded border border-gray-200 w-full shadow-sm block"/>}
@@ -208,7 +142,7 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
                             </div>
                         )}
                         {!job.circularImage1 && !formattedDetails && (
-                            <p className="text-gray-500 mb-6 border-t pt-6">এই চাকরির বিস্তারিত তথ্য বা বিজ্ঞপ্তি পাওয়া যায়নি।</p>
+                            <p className="text-gray-500 mb-6 border-t pt-6">এই চাকরির বিস্তারিত তথ্য বা বিজ্ঞপ্তি পাওয়া যায়নি।</p>
                         )}
                         {job.notice && (
                             <div className="mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 rounded shadow-sm">
@@ -222,18 +156,7 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
                      <aside className="w-full lg:w-[20rem] mt-6 lg:mt-0">
                         <div className="bg-white p-4 rounded-lg shadow-lg sticky top-24 w-full">
                             <h3 className="text-lg font-semibold mb-3 text-gray-700">অন্যান্য চাকরি</h3>
-                            {/* এখানে সম্পর্কিত চাকরি দেখানোর জন্য কোড যোগ করতে পারেন */}
-                            {/* নিচে একটি উদাহরণ */}
-                            {/* <ul>
-                                {relatedJobs.slice(0, 5).map(relatedJob => (
-                                    <li key={relatedJob.id} className="mb-2">
-                                        <Link href={`/job/${generateSlug(relatedJob.job_title)}`} legacyBehavior>
-                                            <a className="text-sm text-blue-600 hover:underline">{relatedJob.job_title}</a>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul> */}
-                             <p className="text-sm text-gray-600">সম্পর্কিত চাকরির তালিকা শীঘ্রই আসছে...</p>
+                            <p className="text-sm text-gray-600">সম্পর্কিত চাকরির তালিকা শীঘ্রই আসছে...</p>
                         </div>
                      </aside>
                 </div>
@@ -249,10 +172,10 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
 }
 
 export async function getServerSideProps(context) {
-    const { slug } = context.params;
+    const { slug } = context.params; // URL থেকে স্লাগ নেওয়া হচ্ছে
     let job = null;
+    // getAllCategoriesForDisplay ব্যবহার করে হেডারের জন্য সব ক্যাটাগরি (id, name, slug সহ) নেওয়া হচ্ছে
     const allCategories = getAllCategoriesForDisplay();
-    // let relatedJobs = []; // সম্পর্কিত চাকরির জন্য
 
     try {
         const response = await axios.get('https://adminjobs.kaziitstudio.com/job_post_api.php');
@@ -260,63 +183,38 @@ export async function getServerSideProps(context) {
 
         job = jobs.find(j => {
             if (!j || !j.job_title) return false;
-            const jobSlug = generateSlug(String(j.job_title));
+            const jobSlug = generateSlug(String(j.job_title)); // job_title কে স্ট্রিং এ কনভার্ট করা হচ্ছে
             return jobSlug === slug;
         });
 
         if (!job) {
-            // context.res.statusCode = 404; // পেজ নট ফাউন্ড স্ট্যাটাস সেট করা যেতে পারে
-            return { 
-                // notFound: true, // অথবা এই প্রপার্টি ব্যবহার করা যেতে পারে ৪৪ পেজ দেখানোর জন্য
-                props: { 
-                    job: null, 
-                    allCategories: JSON.parse(JSON.stringify(allCategories)), 
-                    error: "চাকরিটি খুঁজে পাওয়া যায়নি" 
-                } 
-            };
+            return { props: { job: null, allCategories: JSON.parse(JSON.stringify(allCategories)), error: "চাকরিটি খুঁজে পাওয়া যায়নি" } };
         }
 
+        // category_id কে একটি নাম্বার অ্যারেতে রূপান্তর করা হচ্ছে
         if (job.category_id) {
             job.category_id = (Array.isArray(job.category_id) ? job.category_id.map(id => Number(id)) : [Number(job.category_id)]);
         } else {
-            job.category_id = [];
+            job.category_id = []; // যদি category_id না থাকে, খালি অ্যারে সেট করা হচ্ছে
         }
-
-        // সম্পর্কিত চাকরির তালিকা (উদাহরণস্বরূপ, একই ক্যাটাগরির অন্যান্য চাকরি)
-        // if (job && job.category_id && job.category_id.length > 0) {
-        //     const primaryCatId = job.category_id[0];
-        //     relatedJobs = jobs.filter(
-        //         otherJob => otherJob.id !== job.id &&
-        //                     Array.isArray(otherJob.category_id) &&
-        //                     otherJob.category_id.includes(primaryCatId)
-        //     ).slice(0, 10); // প্রথম ১০টি সম্পর্কিত চাকরি
-        // }
-
 
         return {
             props: {
                 job: JSON.parse(JSON.stringify(job)),
                 allCategories: JSON.parse(JSON.stringify(allCategories)),
-                // relatedJobs: JSON.parse(JSON.stringify(relatedJobs)),
-                error: null,
+                error: null, // কোনো এরর নেই
             },
         };
     } catch (error) {
         console.error(`[JobDetailsPage] Error fetching job details for slug "${slug}":`, error.message);
-        // context.res.statusCode = 500; // ইন্টারনাল সার্ভার এরর
-        return { 
-            props: { 
-                job: null, 
-                allCategories: JSON.parse(JSON.stringify(allCategories)), 
-                // relatedJobs: [],
-                error: error.message || "একটি অপ্রত্যাশিত ত্রুটি ঘটেছে" 
-            } 
-        };
+        return { props: { job: null, allCategories: JSON.parse(JSON.stringify(allCategories)), error: error.message || "একটি অপ্রত্যাশিত ত্রুটি ঘটেছে" } };
     }
 }
 
-// truncateDetails ফাংশনটি descriptionGenerator.js এ সরানো হয়েছে,
-// তাই যদি utils/descriptionGenerator.js থেকে ইম্পোর্ট করা হয়, তাহলে এখানে আর প্রয়োজন নেই।
-// const truncateDetails = (details, maxLength) => { ... }
+const truncateDetails = (details, maxLength) => {
+    if (!details || typeof details !== 'string') return '';
+    if (details.length <= maxLength) return details;
+    return details.substring(0, maxLength).replace(/\s+\S*$/, '').trim() + '...';
+};
 
 export default JobDetailsPage;
