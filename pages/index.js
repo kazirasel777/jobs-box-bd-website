@@ -6,9 +6,9 @@ import axios from 'axios';
 import { FaExternalLinkAlt, FaSearch } from 'react-icons/fa';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { getAllCategoriesForDisplay, getCategoryName } from '../utils/categories'; // getCategoryName এখানে ইম্পোর্ট করা আছে
+import { getAllCategoriesForDisplay, getCategoryName } from '../utils/categories';
 import { generateSlug } from '../utils/slugify';
-import { generateHomepageJobSummary } from '../utils/jobDescriptionUtils'; // নতুন ইউটিলিটি ফাংশন
+import { generateHomepageJobSummary } from '../utils/jobDescriptionUtils';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -45,7 +45,7 @@ const Home = ({ initialJobs, totalJobs, allCategoriesFromSSR }) => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     setJobs(filteredAndSearchedJobs.slice(startIndex, endIndex));
-  }, [currentPage, getFilteredJobs, ITEMS_PER_PAGE]); // ITEMS_PER_PAGE কে dependency array তে যোগ করা হলো
+  }, [currentPage, getFilteredJobs]); // ITEMS_PER_PAGE যদি পরিবর্তিত না হয়, তাহলে dependency হিসেবে না দিলেও চলে
 
   const filterJobsByCategory = (categoryId) => {
     setSelectedCategory(categoryId);
@@ -162,9 +162,26 @@ const Home = ({ initialJobs, totalJobs, allCategoriesFromSSR }) => {
         ? `${getCategoryName(selectedCategory)} ক্যাটাগরিতে কোনো চাকরি নেই।`
         : "এখন কোনো চাকরি উপলব্ধ নেই।");
 
-  const currentYear = new Date().getFullYear();
-  const pageTitleText = `Jobs Box BD - ${selectedCategory ? getCategoryName(selectedCategory) : 'সকল'} চাকরির খবর ${currentYear}`;
-  const metaDescriptionText = `বাংলাদেশে ${selectedCategory ? getCategoryName(selectedCategory) : 'সকল প্রকার'} চাকরির সর্বশেষ খবর (${currentYear}) খুঁজুন। Job Box BD তে সরকারি, বেসরকারি, ব্যাংক, এনজিও এবং অন্যান্য কোম্পানির চাকরির বিজ্ঞপ্তি (Niyog Biggopti) পাওয়া যায়।`;
+  const currentYear = new Date().getFullYear(); // ২০২৫
+
+  // --- SEO-বান্ধব টাইটেল এবং মেটা ডেসক্রিপশন ---
+  let pageTitleText = '';
+  let metaDescriptionText = '';
+
+  if (selectedCategory) {
+    const categoryName = getCategoryName(selectedCategory);
+    pageTitleText = `${categoryName} পদে চাকরির খবর ${currentYear} - সর্বশেষ নিয়োগ বিজ্ঞপ্তি | Job Box BD`;
+    metaDescriptionText = `${categoryName} পদে সর্বশেষ চাকরির বিজ্ঞপ্তি ${currentYear} (Job Circular) ও চাকরির খবর (Chakrir Khobor) খুঁজুন Job Box BD-তে। আপনার পছন্দের ${categoryName.toLowerCase()} চাকরি এখানে পাবেন।`;
+  } else if (searchTerm) {
+    pageTitleText = `"${searchTerm}" সম্পর্কিত চাকরির খবর ${currentYear} | Job Box BD`;
+    metaDescriptionText = `"${searchTerm}" সম্পর্কিত সর্বশেষ চাকরির বিজ্ঞপ্তি (Latest Niyog Biggopti) ও চাকরির খবর ${currentYear} (Recent Chakrir Khobor) খুঁজুন Job Box BD-তে।`;
+  }
+  else {
+    // সাধারণ হোমপেজের জন্য
+    pageTitleText = `চাকরির খবর ${currentYear} - সর্বশেষ নিয়োগ বিজ্ঞপ্তি, সরকারি চাকরি, বেসরকারি, ব্যাংক জব | Job Box BD`;
+    metaDescriptionText = `বাংলাদেশের সর্বশেষ চাকরির খবর ${currentYear} (Latest Job News BD) ও সকল প্রকার নিয়োগ বিজ্ঞপ্তি (All Job Circular ${currentYear}) পেতে Job Box BD ভিজিট করুন। সরকারি চাকরি (Sarkari Chakri), বেসরকারি চাকরি (Besarkari Chakri), ব্যাংক জব (Bank Job Circular), এনজিও ও কোম্পানির চাকরির বিজ্ঞপ্তি এখানে পাবেন।`;
+  }
+  // --- SEO-বান্ধব টাইটেল এবং মেটা ডেসক্রিপশন শেষ ---
 
   return (
     <div className="bg-gray-100 min-h-screen flex flex-col">
@@ -198,7 +215,7 @@ const Home = ({ initialJobs, totalJobs, allCategoriesFromSSR }) => {
                     ? job.category_id.map(Number)
                     : (job.category_id ? [Number(job.category_id)] : []);
                 const currentJobCategoryNames = jobCatIds
-                    .map(id => getCategoryName(id)) // getCategoryName এখানে কল করা হচ্ছে
+                    .map(id => getCategoryName(id))
                     .filter(name => name && !name.startsWith('ক্যাটাগরি '));
 
                 const homepageSummary = generateHomepageJobSummary(job.job_title, job.publishDate, currentJobCategoryNames);
@@ -307,18 +324,17 @@ export async function getServerSideProps() {
   try {
     console.log("Fetching API data (pages/index.js)...");
     const response = await axios.get('https://adminjobs.kaziitstudio.com/job_post_api.php');
-    console.log("API Fetch successful (pages/index.js). Status:", response.status);
+    // console.log("API Fetch successful (pages/index.js). Status:", response.status); // অপ্রয়োজনীয় লগ বাদ দেওয়া হলো
 
     initialJobs = response.data && Array.isArray(response.data.jobs) ? response.data.jobs : [];
     totalJobs = initialJobs.length;
-    console.log("Fetched jobs count (pages/index.js):", totalJobs);
+    // console.log("Fetched jobs count (pages/index.js):", totalJobs); // অপ্রয়োজনীয় লগ বাদ দেওয়া হলো
 
     initialJobs = initialJobs.map(job => ({
         ...job,
-        // category_id একটি একক মান বা অ্যারে হতে পারে, সেটাকে Number অ্যারেতে রূপান্তর করা হচ্ছে
         category_id: job.category_id
             ? (Array.isArray(job.category_id) ? job.category_id.map(id => Number(id)) : [Number(job.category_id)])
-            : [] // যদি category_id না থাকে, খালি অ্যারে সেট করা হচ্ছে
+            : []
     }));
 
   } catch (error) {
