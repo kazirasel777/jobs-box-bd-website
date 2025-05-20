@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+# Disallow: /api/  # যদি কোনো API ফোল্ডার ক্রল করতে না দিতে চান
+# Disallow: /admin/ # যদি কোনো অ্যাডমিন ফোল্ডার ক্রল করতে না দিতে চান
+
+Sitemap: https://jobsboxbd.com/sitemap.xml
