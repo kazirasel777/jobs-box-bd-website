@@ -6,63 +6,85 @@ import Link from 'next/link';
 import Header from '../../components/Header';
 import { generateSlug } from '../../utils/slugify';
 import { getCategoryName, getAllCategoriesForDisplay } from '../../utils/categories';
-// jobDescriptionUtils থেকে ফাংশন ইম্পোর্ট
+<<<<<<< HEAD
 import { generateFullJobDescription, generateMetaDescription } from '../../utils/jobDescriptionUtils';
 import { FaExternalLinkAlt, FaRegClock, FaRegCalendarAlt, FaRegNewspaper, FaUsers, FaThList } from 'react-icons/fa';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react'; // useEffect ইম্পোর্ট করা হয়েছে
+import { useEffect } from 'react';                 // ✅ নতুন
+import { trackJobView } from '../../utils/trackView'; // ✅ নতুন
 
 const JobDetailsPage = ({ job, allCategories, error }) => {
     const router = useRouter();
     const safeAllCategories = Array.isArray(allCategories) ? allCategories : [];
 
-    // --- নতুন কোড শুরু ---
-    // এই useEffect জব ভিউ ট্র্যাক করার জন্য যোগ করা হয়েছে
+    // ✅ জব আইডি থাকলেই ভিউ ট্র্যাক (10 মিনিট ডিবাউন্স util-এ আছে)
     useEffect(() => {
-        // যদি জব অবজেক্ট থাকে এবং এর একটি আইডি থাকে
-        if (job && job.id) {
-            // বট বা প্রি-রেন্ডারিং এড়ানো নিশ্চিত করতে ক্লায়েন্ট সাইডে এই কোড চলবে
-            if (typeof window !== 'undefined' && !/bot|googlebot|crawler|spider|robot|crawling/i.test(navigator.userAgent)) {
-                // API তে ভিউ ট্র্যাক করার জন্য রিকোয়েস্ট পাঠানো হচ্ছে
-                axios.post('https://adminjobs.kaziitstudio.com/api/track_view.php', {
-                    job_id: job.id,
-                    source: 'web'
-                })
-                .then(response => {
-                    // console.log('View tracked successfully'); // ডিবাগিং এর জন্য চাইলে আনকমেন্ট করতে পারেন
-                })
-                .catch(err => {
-                    // console.error('Failed to track view:', err); // ডিবাগিং এর জন্য চাইলে আনকমেন্ট করতে পারেন
-                });
-            }
-        }
-    }, [job]); // job অবজেক্ট পরিবর্তন হলে বা লোড হলে useEffect আবার রান করবে
-    // --- নতুন কোড শেষ ---
+        const jobId = Number(job?.id || job?.job_id);
+        if (jobId) trackJobView(jobId, 'web');
+    }, [job?.id, job?.job_id]);
+
+    if (router.isFallback) {
+        return (
+            <div className="bg-gray-50 min-h-screen flex flex-col justify-center items-center">
+                <div>লোড হচ্ছে...</div>
+            </div>
+        );
+=======
+// jobDescriptionUtils থেকে ফাংশন ইম্পোর্ট
+import { generateFullJobDescription, generateMetaDescription } from '../../utils/jobDescriptionUtils';
+import { FaExternalLinkAlt, FaRegClock, FaRegCalendarAlt, FaRegNewspaper, FaUsers, FaThList } from 'react-icons/fa';
+import { useRouter } from 'next/router';
+
+const JobDetailsPage = ({ job, allCategories, error }) => {
+    // ... (router, safeAllCategories, isFallback, error handling আগের মতোই থাকবে) ...
+    const router = useRouter();
+    const safeAllCategories = Array.isArray(allCategories) ? allCategories : [];
 
     if (router.isFallback) {
         return <div className="bg-gray-50 min-h-screen flex flex-col justify-center items-center"><div>লোড হচ্ছে...</div></div>;
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
     }
 
     if (error || !job) {
         const pageTitle = error ? "ত্রুটি - Job Box BD" : "চাকরি পাওয়া যায়নি - Job Box BD";
         const message = error || "আপনি যে চাকরিটি খুঁজছেন তা পাওয়া যায়নি অথবা লিংকটি সঠিক নয়।";
         return (
+<<<<<<< HEAD
+            <div className="bg-gray-50 min-h-screen flex flex-col">
+=======
              <div className="bg-gray-50 min-h-screen flex flex-col">
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
                 <Head><title>{pageTitle}</title></Head>
                 <Header allCategories={safeAllCategories} currentSelectedCategory={null} onSelectAllJobs={null} />
                 <main className="container mx-auto max-w-7xl py-20 text-center px-4 flex-grow flex flex-col justify-center">
                     <div>
                         <h1 className="text-3xl text-red-600 font-semibold">দুঃখিত!</h1>
                         <p className="text-gray-600 mt-2">{message}</p>
+<<<<<<< HEAD
+                        <Link href="/" legacyBehavior>
+                            <a className="mt-6 inline-block px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-150">হোমপেজে ফিরে যান</a>
+                        </Link>
+                    </div>
+                </main>
+                <footer className="bg-gray-800 text-gray-300 py-6 mt-auto">
+                    <div className="container mx-auto max-w-7xl text-center text-sm px-4">
+                        &copy; {new Date().getFullYear()} Job Box BD. সর্বস্বত্ব সংরক্ষিত।
+                    </div>
+                </footer>
+=======
                         <Link href="/" legacyBehavior><a className="mt-6 inline-block px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-150">হোমপেজে ফিরে যান</a></Link>
                     </div>
                 </main>
                  <footer className="bg-gray-800 text-gray-300 py-6 mt-auto"><div className="container mx-auto max-w-7xl text-center text-sm px-4">&copy; {new Date().getFullYear()} Job Box BD. সর্বস্বত্ব সংরক্ষিত।</div></footer>
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
             </div>
         );
     }
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
     let applicationLink = job.web_link || '';
     if (applicationLink && typeof applicationLink === 'string' && !applicationLink.startsWith('http://') && !applicationLink.startsWith('https://')) {
         applicationLink = `https://${applicationLink}`;
@@ -71,11 +93,17 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
     const jobCategoryNames = (job.category_id || []).map(id => getCategoryName(id)).filter(name => name && !name.startsWith('ক্যাটাগরি '));
     const currentJobPrimaryCategoryId = (job.category_id && job.category_id.length > 0) ? job.category_id[0] : null;
 
+<<<<<<< HEAD
+    const metaDescriptionText = generateMetaDescription(job.job_title, job.publishDate, jobCategoryNames, job.jobSource);
+    const jobFullDescription = generateFullJobDescription(job.job_title, job.publishDate, job.jobSource, jobCategoryNames);
+
+=======
     // ইউটিলিটি ফাংশন ব্যবহার করে ডাইনামিক বিবরণী তৈরি (jobSource ও jobCategoryNames পাস করা হচ্ছে)
     const metaDescriptionText = generateMetaDescription(job.job_title, job.publishDate, jobCategoryNames, job.jobSource);
     const jobFullDescription = generateFullJobDescription(job.job_title, job.publishDate, job.jobSource, jobCategoryNames);
 
 
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
     return (
         <div className="bg-gray-50 min-h-screen flex flex-col">
             <Head>
@@ -92,6 +120,60 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
 
             <main className="container mx-auto max-w-7xl py-8 px-4 flex-grow">
                 <div className="lg:flex lg:gap-x-8">
+<<<<<<< HEAD
+                    <article className="w-full lg:flex-1 bg-white p-6 md:p-8 rounded-lg shadow-xl mb-6 lg:mb-0">
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 border-b pb-4">{job.job_title}</h1>
+
+                        {/* --- একনজরে গুরুত্বপূর্ণ তথ্য --- */}
+                        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-indigo-100 rounded-lg p-6 mb-8 shadow-sm">
+                            <h2 className="text-xl font-semibold text-gray-700 mb-5">একনজরে গুরুত্বপূর্ণ তথ্য</h2>
+                            <div className="space-y-3 text-base">
+                                {job.publishDate && (
+                                    <div className="flex items-center">
+                                        <FaRegCalendarAlt className="mr-2 text-indigo-500 flex-shrink-0 w-4 h-4" />
+                                        <strong className="text-gray-600 mr-1">প্রকাশের তারিখ:</strong>
+                                        <span className="text-gray-800">{job.publishDate}</span>
+                                    </div>
+                                )}
+                                {job.jobSource && (
+                                    <div className="flex items-center">
+                                        <FaRegNewspaper className="mr-2 text-indigo-500 flex-shrink-0 w-4 h-4" />
+                                        <strong className="text-gray-600 mr-1">সূত্র:</strong>
+                                        <span className="text-gray-800">{job.jobSource}</span>
+                                    </div>
+                                )}
+                                {job.applicationStartDate && (
+                                    <div className="flex items-center">
+                                        <FaRegCalendarAlt className="mr-2 text-green-500 flex-shrink-0 w-4 h-4" />
+                                        <strong className="text-gray-600 mr-1">আবেদন শুরু:</strong>
+                                        <span className="text-gray-800">{job.applicationStartDate}</span>
+                                    </div>
+                                )}
+                                {job.lastDate && (
+                                    <div className="flex items-center">
+                                        <FaRegCalendarAlt className="mr-2 text-red-500 flex-shrink-0 w-4 h-4" />
+                                        <strong className="text-gray-600 mr-1">আবেদনের শেষ:</strong>
+                                        <span className="text-gray-800">{job.lastDate}</span>
+                                    </div>
+                                )}
+                                {job.daysLeft && job.daysLeft !== "Expired" && job.daysLeft !== "Expiring Today" && (
+                                    <div className="flex items-center">
+                                        <FaRegClock className="mr-2 text-indigo-500 flex-shrink-0 w-4 h-4" />
+                                        <strong className="text-gray-600 mr-1">আবেদনের বাকি:</strong>
+                                        <span className="text-gray-800">{job.daysLeft} দিন</span>
+                                    </div>
+                                )}
+                                {job.daysLeft && job.daysLeft === "Expiring Today" && (
+                                    <div className="flex items-center">
+                                        <FaRegClock className="mr-2 text-red-500 flex-shrink-0 w-4 h-4" />
+                                        <strong className="text-gray-600 mr-1">আবেদনের বাকি:</strong>
+                                        <span className="text-red-600 font-semibold">{job.daysLeft}</span>
+                                    </div>
+                                )}
+                                {jobCategoryNames && jobCategoryNames.length > 0 && (
+                                    <div className="flex items-start">
+                                        <FaThList className="mr-2 text-indigo-500 flex-shrink-0 w-4 h-4 mt-1" />
+=======
                      <article className="w-full lg:flex-1 bg-white p-6 md:p-8 rounded-lg shadow-xl mb-6 lg:mb-0">
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 border-b pb-4">{job.job_title}</h1>
 
@@ -108,6 +190,7 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
                                 {jobCategoryNames && jobCategoryNames.length > 0 &&
                                     <div className="flex items-start">
                                         <FaThList className="mr-2 text-indigo-500 flex-shrink-0 w-4 h-4 mt-1"/>
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
                                         <strong className="text-gray-600 mr-1 mt-0.5">ক্যাটাগরি:</strong>
                                         <div className="flex flex-wrap gap-1 ml-1">
                                             {jobCategoryNames.map(name => (
@@ -115,6 +198,45 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
                                             ))}
                                         </div>
                                     </div>
+<<<<<<< HEAD
+                                )}
+                                {job.total_vacancy && (
+                                    <div className="flex items-center">
+                                        <FaUsers className="mr-2 text-indigo-500 flex-shrink-0 w-4 h-4" />
+                                        <strong className="text-gray-600 mr-1">মোট পদ সংখ্যা:</strong>
+                                        <span className="text-gray-800">{job.total_vacancy}</span>
+                                    </div>
+                                )}
+                                {applicationLink && !applicationLink.includes('jobsboxbd.com') && (
+                                    <div className="flex items-start">
+                                        <FaExternalLinkAlt className="mr-2 text-blue-500 mt-1 flex-shrink-0 w-4 h-4" />
+                                        <strong className="text-gray-600 mr-1 mt-0.5">আবেদন লিংক:</strong>
+                                        <a
+                                            href={applicationLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer nofollow"
+                                            className="text-blue-600 hover:underline break-all ml-1"
+                                        >
+                                            {applicationLink.replace(/^https?:\/\//, '')}
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* --- অফিসিয়াল বিজ্ঞপ্তি / ছবি --- */}
+                        {(job.circularImage1 || job.circularImage2 || job.circularImage3 || job.circularImage4) && (
+                            <div className="mb-8">
+                                <h2 className="text-xl font-semibold mb-4 text-gray-700 border-t pt-6">অফিসিয়াল বিজ্ঞপ্তি / ছবি</h2>
+                                <div className="space-y-4">
+                                    {job.circularImage1 && <img loading="lazy" src={job.circularImage1} alt={`${job.job_title} - সার্কুলার ১`} className="rounded border border-gray-200 w-full shadow-sm block" />}
+                                    {job.circularImage2 && <img loading="lazy" src={job.circularImage2} alt={`${job.job_title} - সার্কুলার ২`} className="rounded border border-gray-200 w-full shadow-sm block" />}
+                                    {job.circularImage3 && <img loading="lazy" src={job.circularImage3} alt={`${job.job_title} - সার্কুলার ৩`} className="rounded border border-gray-200 w-full shadow-sm block" />}
+                                    {job.circularImage4 && <img loading="lazy" src={job.circularImage4} alt={`${job.job_title} - সার্কুলার ৪`} className="rounded border border-gray-200 w-full shadow-sm block" />}
+                                </div>
+                            </div>
+                        )}
+=======
                                 }
                                 {job.total_vacancy && <div className="flex items-center"><FaUsers className="mr-2 text-indigo-500 flex-shrink-0 w-4 h-4"/> <strong className="text-gray-600 mr-1">মোট পদ সংখ্যা:</strong> <span className="text-gray-800">{job.total_vacancy}</span></div>}
                                 {applicationLink && !applicationLink.includes('jobsboxbd.com') &&
@@ -142,26 +264,52 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
                                 </div>
                              </div>
                          )}
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
 
                         {/* --- ডাইনামিক বিবরণী --- */}
                         <div className="prose prose-sm sm:prose lg:prose-lg max-w-none text-gray-800 mb-6 border-t pt-6">
                             <h2 className="text-xl font-semibold mb-4 text-gray-700">বিস্তারিত তথ্য</h2>
                             <div className="space-y-3 text-justify">
-                                {jobFullDescription} {/* এখানে jobFullDescription ব্যবহার করা হয়েছে */}
+<<<<<<< HEAD
+                                {jobFullDescription}
+=======
+                                {jobFullDescription} {/* এখানে jobFullDescription ব্যবহার করা হয়েছে */}
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
                             </div>
                         </div>
 
                         {!job.circularImage1 && !job.circularImage2 && !job.circularImage3 && !job.circularImage4 && (
-                            <p className="text-gray-500 mb-6 border-t pt-6">এই চাকরির বিজ্ঞপ্তির কোনো ছবি পাওয়া যায়নি। অনুগ্রহ করে আবেদন লিংক অথবা অফিসিয়াল ওয়েবসাইটে বিস্তারিত দেখুন।</p>
+<<<<<<< HEAD
+                            <p className="text-gray-500 mb-6 border-t pt-6">
+                                এই চাকরির বিজ্ঞপ্তির কোনো ছবি পাওয়া যায়নি। অনুগ্রহ করে আবেদন লিংক অথবা অফিসিয়াল ওয়েবসাইটে বিস্তারিত দেখুন।
+                            </p>
+                        )}
+
+                        {/* --- বিশেষ নোটিশ --- */}
+=======
+                            <p className="text-gray-500 mb-6 border-t pt-6">এই চাকরির বিজ্ঞপ্তির কোনো ছবি পাওয়া যায়নি। অনুগ্রহ করে আবেদন লিংক অথবা অফিসিয়াল ওয়েবসাইটে বিস্তারিত দেখুন।</p>
                         )}
 
                         {/* --- বিশেষ নোটিশ (আগের মতোই) --- */}
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
                         {job.notice && (
                             <div className="mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 rounded shadow-sm">
                                 <h3 className="font-semibold text-yellow-800 mb-1">বিশেষ নোটিশ</h3>
                                 <p className="text-sm text-yellow-700">{job.notice}</p>
                             </div>
                         )}
+<<<<<<< HEAD
+                    </article>
+
+                    {/* ... সাইডবার (আগের মতোই) ... */}
+                </div>
+            </main>
+            {/* ... ফুটার (আগের মতোই) ... */}
+        </div>
+    );
+};
+
+=======
                      </article>
 
                      {/* ... সাইডবার (আগের মতোই) ... */}
@@ -173,13 +321,18 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
 }
 
 // ... (getServerSideProps অপরিবর্তিত) ...
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
 export async function getServerSideProps(context) {
     const { slug } = context.params;
     let job = null;
     const allCategories = getAllCategoriesForDisplay();
 
     try {
+<<<<<<< HEAD
+        const response = await axios.get('https://admin.kaziitstudio.com/job_post_api.php');
+=======
         const response = await axios.get('https://adminjobs.kaziitstudio.com/job_post_api.php');
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
         const jobs = response.data && Array.isArray(response.data.jobs) ? response.data.jobs : [];
 
         job = jobs.find(j => {
@@ -189,7 +342,17 @@ export async function getServerSideProps(context) {
         });
 
         if (!job) {
+<<<<<<< HEAD
+            return {
+                props: {
+                    job: null,
+                    allCategories: JSON.parse(JSON.stringify(allCategories)),
+                    error: "চাকরিটি খুঁজে পাওয়া যায়নি"
+                }
+            };
+=======
             return { props: { job: null, allCategories: JSON.parse(JSON.stringify(allCategories)), error: "চাকরিটি খুঁজে পাওয়া যায়নি" } };
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
         }
 
         if (job.category_id) {
@@ -207,9 +370,22 @@ export async function getServerSideProps(context) {
         };
     } catch (error) {
         console.error(`[JobDetailsPage] Error fetching job details for slug "${slug}":`, error.message);
+<<<<<<< HEAD
+        return {
+            props: {
+                job: null,
+                allCategories: JSON.parse(JSON.stringify(allCategories)),
+                error: error.message || "একটি অপ্রত্যাশিত ত্রুটি ঘটেছে"
+            }
+        };
+    }
+}
+
+=======
         return { props: { job: null, allCategories: JSON.parse(JSON.stringify(allCategories)), error: error.message || "একটি অপ্রত্যাশিত ত্রুটি ঘটেছে" } };
     }
 }
 
 
+>>>>>>> c5690b8e38a5d83a95d294c8782bb871f0d22564
 export default JobDetailsPage;
