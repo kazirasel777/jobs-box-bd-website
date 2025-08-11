@@ -10,11 +10,34 @@ import { getCategoryName, getAllCategoriesForDisplay } from '../../utils/categor
 import { generateFullJobDescription, generateMetaDescription } from '../../utils/jobDescriptionUtils';
 import { FaExternalLinkAlt, FaRegClock, FaRegCalendarAlt, FaRegNewspaper, FaUsers, FaThList } from 'react-icons/fa';
 import { useRouter } from 'next/router';
+import { useEffect } from 'react'; // useEffect ইম্পোর্ট করা হয়েছে
 
 const JobDetailsPage = ({ job, allCategories, error }) => {
-    // ... (router, safeAllCategories, isFallback, error handling আগের মতোই থাকবে) ...
     const router = useRouter();
     const safeAllCategories = Array.isArray(allCategories) ? allCategories : [];
+
+    // --- নতুন কোড শুরু ---
+    // এই useEffect জব ভিউ ট্র্যাক করার জন্য যোগ করা হয়েছে
+    useEffect(() => {
+        // যদি জব অবজেক্ট থাকে এবং এর একটি আইডি থাকে
+        if (job && job.id) {
+            // বট বা প্রি-রেন্ডারিং এড়ানো নিশ্চিত করতে ক্লায়েন্ট সাইডে এই কোড চলবে
+            if (typeof window !== 'undefined' && !/bot|googlebot|crawler|spider|robot|crawling/i.test(navigator.userAgent)) {
+                // API তে ভিউ ট্র্যাক করার জন্য রিকোয়েস্ট পাঠানো হচ্ছে
+                axios.post('https://adminjobs.kaziitstudio.com/api/track_view.php', {
+                    job_id: job.id,
+                    source: 'web'
+                })
+                .then(response => {
+                    // console.log('View tracked successfully'); // ডিবাগিং এর জন্য চাইলে আনকমেন্ট করতে পারেন
+                })
+                .catch(err => {
+                    // console.error('Failed to track view:', err); // ডিবাগিং এর জন্য চাইলে আনকমেন্ট করতে পারেন
+                });
+            }
+        }
+    }, [job]); // job অবজেক্ট পরিবর্তন হলে বা লোড হলে useEffect আবার রান করবে
+    // --- নতুন কোড শেষ ---
 
     if (router.isFallback) {
         return <div className="bg-gray-50 min-h-screen flex flex-col justify-center items-center"><div>লোড হচ্ছে...</div></div>;
@@ -124,12 +147,12 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
                         <div className="prose prose-sm sm:prose lg:prose-lg max-w-none text-gray-800 mb-6 border-t pt-6">
                             <h2 className="text-xl font-semibold mb-4 text-gray-700">বিস্তারিত তথ্য</h2>
                             <div className="space-y-3 text-justify">
-                                {jobFullDescription} {/* এখানে jobFullDescription ব্যবহার করা হয়েছে */}
+                                {jobFullDescription} {/* এখানে jobFullDescription ব্যবহার করা হয়েছে */}
                             </div>
                         </div>
 
                         {!job.circularImage1 && !job.circularImage2 && !job.circularImage3 && !job.circularImage4 && (
-                            <p className="text-gray-500 mb-6 border-t pt-6">এই চাকরির বিজ্ঞপ্তির কোনো ছবি পাওয়া যায়নি। অনুগ্রহ করে আবেদন লিংক অথবা অফিসিয়াল ওয়েবসাইটে বিস্তারিত দেখুন।</p>
+                            <p className="text-gray-500 mb-6 border-t pt-6">এই চাকরির বিজ্ঞপ্তির কোনো ছবি পাওয়া যায়নি। অনুগ্রহ করে আবেদন লিংক অথবা অফিসিয়াল ওয়েবসাইটে বিস্তারিত দেখুন।</p>
                         )}
 
                         {/* --- বিশেষ নোটিশ (আগের মতোই) --- */}
