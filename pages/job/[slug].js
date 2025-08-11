@@ -21,17 +21,14 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
             // ক্লায়েন্ট সাইডে এবং বট নয়, এমন ভিজিটরদের জন্য ভিউ ট্র্যাক করা হবে
             if (typeof window !== 'undefined' && !/bot|googlebot|crawler|spider|robot|crawling/i.test(navigator.userAgent)) {
                 
-                // --- মূল পরিবর্তন এখানে ---
+                // --- ✅ মূল পরিবর্তন এখানে ---
                 // API URL থেকে '/api/' অংশটি বাদ দেওয়া হয়েছে
                 axios.post('https://adminjobs.kaziitstudio.com/track_view.php', {
                     job_id: job.id,
                     source: 'web'
                 })
-                .then(response => {
-                    // console.log('View tracked successfully'); // ডিবাগিং এর জন্য
-                })
                 .catch(err => {
-                    // console.error('Failed to track view:', err); // ডিবাগিং এর জন্য
+                    console.error('Failed to track view:', err); // শুধু এরর হলে কনসোলে দেখাবে
                 });
             }
         }
