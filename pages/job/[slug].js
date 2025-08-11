@@ -21,8 +21,7 @@ const JobDetailsPage = ({ job, allCategories, error }) => {
             // ক্লায়েন্ট সাইডে এবং বট নয়, এমন ভিজিটরদের জন্য ভিউ ট্র্যাক করা হবে
             if (typeof window !== 'undefined' && !/bot|googlebot|crawler|spider|robot|crawling/i.test(navigator.userAgent)) {
                 
-                // --- ✅ মূল পরিবর্তন এখানে ---
-                // API URL থেকে '/api/' অংশটি বাদ দেওয়া হয়েছে
+                // --- ✅ সঠিক API URL ---
                 axios.post('https://adminjobs.kaziitstudio.com/track_view.php', {
                     job_id: job.id,
                     source: 'web'
