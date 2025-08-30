@@ -1,4 +1,5 @@
 // utils/slugify.js
+
 export const slugify = (text) => {
     if (typeof text !== 'string') {
         return '';
