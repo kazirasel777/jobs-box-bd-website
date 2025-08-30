@@ -4,6 +4,19 @@ import Header from '../../components/Header';
 import slugify from '../../utils/slugify';
 
 export default function CategoryPage({ jobs, category, categories }) {
+  // ক্যাটাগরি না পাওয়া গেলে একটি মেসেজ দেখানো
+  if (!category) {
+    return (
+      <div>
+        <Header categories={categories} />
+        <main className="container mx-auto p-4">
+          <h1 className="text-2xl font-bold mb-4">ক্যাটাগরি পাওয়া যায়নি</h1>
+          <p>আপনি যে ক্যাটাগরিটি খুঁজছেন, তা এখানে নেই।</p>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div>
       <Head>
@@ -26,7 +39,7 @@ export default function CategoryPage({ jobs, category, categories }) {
               </div>
             ))
           ) : (
-            <p>এই ক্যাটাগরিতে কোনো চাকরি পাওয়া যায়নি।</p>
+            <p>এই ক্যাটাগরিতে বর্তমানে কোনো চাকরি পাওয়া যায়নি।</p>
           )}
         </div>
       </main>
@@ -60,11 +73,13 @@ export async function getStaticProps({ params }) {
     'Accept': 'application/json',
   };
 
+  // দুটি API কল একসাথে করা হচ্ছে
   const [categoryJobsRes, allCategoriesRes] = await Promise.all([
     fetch(`${baseUrl}/categories/${params.slug}/jobs`, { headers }),
     fetch(`${baseUrl}/categories`, { headers })
   ]);
   
+  // যদি নির্দিষ্ট ক্যাটাগরিটি খুঁজে না পাওয়া যায়
   if (!categoryJobsRes.ok) {
       return { notFound: true };
   }
@@ -74,8 +89,8 @@ export async function getStaticProps({ params }) {
 
   return {
     props: {
-      jobs: categoryJobsData.data.jobs || [],
-      category: categoryJobsData.data.category || null,
+      jobs: categoryJobsData.data?.jobs || [], // Optional chaining for safety
+      category: categoryJobsData.data?.category || null, // Optional chaining for safety
       categories: allCategoriesData.data || [],
     },
     revalidate: 60,
