@@ -1,30 +1,19 @@
+// pages/category/[slug].js
 import Head from 'next/head';
 import Link from 'next/link';
 import Header from '../../components/Header';
-import slugify from '../../utils/slugify';
+import { slugify } from '../../utils/slugify'; // Corrected import
 
 export default function CategoryPage({ jobs, category, categories }) {
-  // ক্যাটাগরি না পাওয়া গেলে একটি মেসেজ দেখানো
   if (!category) {
-    return (
-      <div>
-        <Header categories={categories} />
-        <main className="container mx-auto p-4">
-          <h1 className="text-2xl font-bold mb-4">ক্যাটাগরি পাওয়া যায়নি</h1>
-          <p>আপনি যে ক্যাটাগরিটি খুঁজছেন, তা এখানে নেই।</p>
-        </main>
-      </div>
-    );
+    return <div>ক্যাটাগরি পাওয়া যায়নি।</div>;
   }
-
   return (
     <div>
       <Head>
         <title>{category.name} - চাকরির খবর</title>
       </Head>
-
       <Header categories={categories} />
-
       <main className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">{category.name} ক্যাটাগরির চাকরি</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -39,7 +28,7 @@ export default function CategoryPage({ jobs, category, categories }) {
               </div>
             ))
           ) : (
-            <p>এই ক্যাটাগরিতে বর্তমানে কোনো চাকরি পাওয়া যায়নি।</p>
+            <p>এই ক্যাটাগরিতে কোনো চাকরি পাওয়া যায়নি।</p>
           )}
         </div>
       </main>
@@ -50,47 +39,37 @@ export default function CategoryPage({ jobs, category, categories }) {
 export async function getStaticPaths() {
   const apiToken = process.env.API_TOKEN;
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-  const res = await fetch(`${baseUrl}/categories`, {
-    headers: { 'Authorization': `Bearer ${apiToken}` }
-  });
+  const res = await fetch(`${baseUrl}/categories`, { headers: { 'Authorization': `Bearer ${apiToken}` } });
   const categoriesData = await res.json();
   const categories = categoriesData.data || [];
-
-  const paths = categories.map((cat) => ({
-    params: { slug: cat.slug },
-  }));
-
+  const paths = categories
+    .filter(cat => cat && cat.slug) // This line fixes the build error
+    .map((cat) => ({
+      params: { slug: cat.slug },
+    }));
   return { paths, fallback: 'blocking' };
 }
 
 export async function getStaticProps({ params }) {
   const apiToken = process.env.API_TOKEN;
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
   const headers = {
     'Authorization': `Bearer ${apiToken}`,
     'Accept': 'application/json',
   };
-
-  // দুটি API কল একসাথে করা হচ্ছে
   const [categoryJobsRes, allCategoriesRes] = await Promise.all([
     fetch(`${baseUrl}/categories/${params.slug}/jobs`, { headers }),
     fetch(`${baseUrl}/categories`, { headers })
   ]);
-  
-  // যদি নির্দিষ্ট ক্যাটাগরিটি খুঁজে না পাওয়া যায়
   if (!categoryJobsRes.ok) {
       return { notFound: true };
   }
-
   const categoryJobsData = await categoryJobsRes.json();
   const allCategoriesData = await allCategoriesRes.json();
-
   return {
     props: {
-      jobs: categoryJobsData.data?.jobs || [], // Optional chaining for safety
-      category: categoryJobsData.data?.category || null, // Optional chaining for safety
+      jobs: categoryJobsData.data?.jobs || [],
+      category: categoryJobsData.data?.category || null,
       categories: allCategoriesData.data || [],
     },
     revalidate: 60,
