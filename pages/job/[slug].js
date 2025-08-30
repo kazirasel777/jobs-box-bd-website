@@ -54,22 +54,26 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps({ params }) {
-  const apiToken = process.env.API_TOKEN;
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const BASE  = process.env.JOBSBOX_API_BASE || process.env.NEXT_PUBLIC_API_BASE_URL;
+  const TOKEN = process.env.JOBSBOX_API_TOKEN || process.env.API_TOKEN;
+
   const id = params.slug.split('-').pop();
+
   const headers = {
-    'Authorization': `Bearer ${apiToken}`,
+    'Authorization': `Bearer ${TOKEN}`,
     'Accept': 'application/json',
   };
+
   const [jobRes, categoriesRes] = await Promise.all([
-    fetch(`${baseUrl}/jobs/${id}`, { headers }),
-    fetch(`${baseUrl}/categories`, { headers })
+    fetch(`${BASE}/job/${id}`, { headers }),        // <-- এখানে /job/{id}
+    fetch(`${BASE}/categories`, { headers }),
   ]);
-  if (!jobRes.ok) {
-    return { notFound: true };
-  }
+
+  if (!jobRes.ok) return { notFound: true };
+
   const jobData = await jobRes.json();
   const categoriesData = await categoriesRes.json();
+
   return {
     props: {
       job: jobData.data || null,
@@ -78,3 +82,4 @@ export async function getStaticProps({ params }) {
     revalidate: 60,
   };
 }
+
