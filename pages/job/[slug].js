@@ -1,10 +1,10 @@
+// pages/job/[slug].js
 import Head from 'next/head';
 import Header from '../../components/Header';
 import { useEffect } from 'react';
+import { slugify } from '../../utils/slugify'; // Corrected import
 
 export default function JobDetails({ job, categories }) {
-  
-  // Job view count বাড়ানোর জন্য
   useEffect(() => {
     if (job?.id) {
       fetch(`/api/increment-view`, {
@@ -23,11 +23,9 @@ export default function JobDetails({ job, categories }) {
     <div>
       <Head>
         <title>{job.title} - JobsBox BD</title>
-        <meta name="description" content={job.description.substring(0, 160)} />
+        <meta name="description" content={job.description ? job.description.substring(0, 160) : ''} />
       </Head>
-
       <Header categories={categories} />
-
       <main className="container mx-auto p-4">
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h1 className="text-3xl font-bold mb-2">{job.title}</h1>
@@ -41,31 +39,17 @@ export default function JobDetails({ job, categories }) {
   );
 }
 
-// slugify function যা URL তৈরি করতে সাহায্য করবে
-const slugify = (text) => {
-    return text.toString().toLowerCase()
-        .replace(/\s+/g, '-') // Replace spaces with -
-        .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-        .replace(/\-\-+/g, '-') // Replace multiple - with single -
-        .replace(/^-+/, '') // Trim - from start of text
-        .replace(/-+$/, ''); // Trim - from end of text
-};
-
-
 export async function getStaticPaths() {
   const apiToken = process.env.API_TOKEN;
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-  const res = await fetch(`${baseUrl}/jobs`, {
-    headers: { 'Authorization': `Bearer ${apiToken}` }
-  });
+  const res = await fetch(`${baseUrl}/jobs`, { headers: { 'Authorization': `Bearer ${apiToken}` } });
   const jobsData = await res.json();
   const jobs = jobsData.data || [];
-
-  const paths = jobs.map((job) => ({
-    params: { slug: `${slugify(job.title)}-${job.id}` },
-  }));
-
+  const paths = jobs
+    .filter(job => job.title && job.id) // Ensure title and id exist
+    .map((job) => ({
+      params: { slug: `${slugify(job.title)}-${job.id}` },
+    }));
   return { paths, fallback: 'blocking' };
 }
 
@@ -73,24 +57,19 @@ export async function getStaticProps({ params }) {
   const apiToken = process.env.API_TOKEN;
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   const id = params.slug.split('-').pop();
-
   const headers = {
     'Authorization': `Bearer ${apiToken}`,
     'Accept': 'application/json',
   };
-
   const [jobRes, categoriesRes] = await Promise.all([
     fetch(`${baseUrl}/jobs/${id}`, { headers }),
     fetch(`${baseUrl}/categories`, { headers })
   ]);
-
   if (!jobRes.ok) {
-    return { notFound: true }; // চাকরি খুঁজে না পেলে 404 পেইজ দেখাবে
+    return { notFound: true };
   }
-
   const jobData = await jobRes.json();
   const categoriesData = await categoriesRes.json();
-  
   return {
     props: {
       job: jobData.data || null,
